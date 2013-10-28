@@ -140,12 +140,8 @@ public class DSLauncherHead extends JFrame {
 		
 		setLocationRelativeTo(null);
 		
-		setVisible(true);
-		
 		//Do we want users to be able to resize the window/popup? 
 		//setResizable(false);
-		
-		setVisible(true);
 	}
 	
 	/**
