@@ -147,6 +147,11 @@ public class DSLauncherHead extends JFrame {
 	 */
 	private void preInit() {
 		statusString = "";
+		versions = new ArrayList<String>();
+		downloadUrls = new ArrayList<String>();
+		fileNames = new ArrayList<String>();
+		
+		
 		
 		titleLabel = new JLabel("DSLauncher");
 		titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -174,7 +179,13 @@ public class DSLauncherHead extends JFrame {
 		//Do we want users to be able to resize the window/popup? 
 		//setResizable(false);
 		
-		
+		try {
+			updateUrl = new URL(UPDATE_URL_STRING);
+		} catch (MalformedURLException e) {
+			//Uhhhh... it broke?
+			appendLine("Error: URL could not be made");
+			saveConsoleLog(ERROR_FILENAME + dateFormat.format(new Date()) + ".txt");
+		}
 	}
 	
 	/**
@@ -190,13 +201,6 @@ public class DSLauncherHead extends JFrame {
 	 * could use the text file as well.
 	 */
 	private void postInit() {
-		try {
-			updateUrl = new URL(UPDATE_URL_STRING);
-		} catch (MalformedURLException e) {
-			//Uhhhh... it broke?
-			appendLine("Error: URL could not be made");
-			saveConsoleLog(ERROR_FILENAME + dateFormat.format(new Date()) + ".txt");
-		}
 	}
 	
 	private void closeGUI() {
@@ -273,11 +277,14 @@ public class DSLauncherHead extends JFrame {
 			{  
 			    
 				//Splits the string into parts based on semi colons, and creates empty strings if there exists ;;
-			    String[] updateParts = line.split(";", -1);
+			    
+				String[] updateParts = line.split(";", -1);
 			    try {
-			    	versions.add(updateParts[0]);
-			    	downloadUrls.add(updateParts[1]);
-			    	fileNames.add(updateParts[2]);
+			    	if (updateParts.length>=3) {
+				    	versions.add(updateParts[0]);
+				    	downloadUrls.add(updateParts[1]);
+				    	fileNames.add(updateParts[2]);
+			    	}
 			    } catch(IndexOutOfBoundsException e) { 
 					appendLine("Update.txt doesn't look right.");
 					appendLine("expected: Version; DownloadURL; FileName");
