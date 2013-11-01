@@ -15,6 +15,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 import javax.swing.BoxLayout;
@@ -267,17 +268,26 @@ public class DSLauncherHead extends JFrame {
 	
 	private void updateVersionFromServer() {
 		appendLine("Obtaining version from server.");
+		Scanner s;
 		try {
-			Scanner s = new Scanner(updateUrl.openStream());
+			s = new Scanner(updateUrl.openStream());
 			updateIndex = 0;
 			versionFromServer = "";
 			
-			String line = s.nextLine().replace(" ", "");  
-			while (line != null)  
+			String line;
+			
+			
+			while (true)
 			{  
-			    
+				try {
+			    	line = s.nextLine().replace(" ", "");
+			    } catch(NoSuchElementException e) {
+			    	//We're done here
+					appendLine("Recieved server version reply: " + versionFromServer);
+					s.close();
+					break;
+			    }
 				//Splits the string into parts based on semi colons, and creates empty strings if there exists ;;
-			    
 				String[] updateParts = line.split(";", -1);
 			    try {
 			    	if (updateParts.length>=3) {
@@ -295,11 +305,10 @@ public class DSLauncherHead extends JFrame {
 			    	versionFromServer = versions.get(updateIndex);
 			    }
 			    
-			    line = s.nextLine().trim();
+			    
 			    updateIndex ++;
 			}
-			appendLine("Recieved server version reply: " + versionFromServer);
-			s.close();
+			
 		} catch(IOException e) {
 			appendLine("Couldn't recieve response from server, ignoring updates");
 			versionFromServer = versionFromFile;
@@ -307,7 +316,7 @@ public class DSLauncherHead extends JFrame {
 	}
 	
 	private int compareVersion(String vf, String vs) {
-		appendLine("Comparing version.");
+		//Split by periods... needed escape sequence \\.
 		String[] vfParts = vf.split("\\.");
 		String[] vsParts = vs.split("\\.");
 		
