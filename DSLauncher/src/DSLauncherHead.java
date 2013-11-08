@@ -1,14 +1,13 @@
 package DSLauncher.src;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Toolkit;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
@@ -26,6 +25,13 @@ import javax.swing.JPanel;
 import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+
+import net.sf.sevenzipjbinding.ISevenZipInArchive;
+import net.sf.sevenzipjbinding.SevenZip;
+import net.sf.sevenzipjbinding.SevenZipException;
+import net.sf.sevenzipjbinding.impl.RandomAccessFileInStream;
+import net.sf.sevenzipjbinding.simple.ISimpleInArchive;
+import net.sf.sevenzipjbinding.simple.ISimpleInArchiveItem;
 
 public class DSLauncherHead extends JFrame {
 	/** Auto Generated ID **/
@@ -62,7 +68,7 @@ public class DSLauncherHead extends JFrame {
 	/***********************/
 	
 	/** Location of update.txt **/
-	private final String UPDATE_URL_STRING = "https://dl.dropboxusercontent.com/u/5921811/update.txt";
+	private final String UPDATE_URL_STRING = "https://dl.dropboxusercontent.com/s/n4jfufpyh5emqg1/fakeUpdate.txt"; //"https://dl.dropboxusercontent.com/u/5921811/update.txt"
 	
 	/** File Date Format **/
 	private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss");
@@ -124,8 +130,8 @@ public class DSLauncherHead extends JFrame {
 			//Turn the GUI on!
 			setVisible(true);
 			
-			updateDSMinecraftInstallation();
-			saveToTextFile(DEFAULT_FILE_NAME);
+			updateDSMinecraftInstallation(0);
+			//saveToTextFile(DEFAULT_FILE_NAME);
 			
 			saveConsoleLog(UPDATE_FILENAME + dateFormat.format(new Date()) + ".txt");
 			
@@ -152,8 +158,6 @@ public class DSLauncherHead extends JFrame {
 		downloadUrls = new ArrayList<String>();
 		fileNames = new ArrayList<String>();
 		
-		
-		
 		titleLabel = new JLabel("DSLauncher");
 		titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		statusLabel = new JLabel(statusString);
@@ -174,7 +178,7 @@ public class DSLauncherHead extends JFrame {
 		//The X doesn't exist any more, but I set the default close operation anyways...
 		setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
 		setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-		//Start window in the center of the screen
+		//Start window in the center of the main screen
 		setLocationRelativeTo(null);
 			
 		//Do we want users to be able to resize the window/popup? 
@@ -198,8 +202,7 @@ public class DSLauncherHead extends JFrame {
 	}
 	
 	/**
-	 * Instantiates URL's for updater.  Currently uses a "hard set" URL string to instantiate the URL, but we 
-	 * could use the text file as well.
+	 * Nothing at the moment
 	 */
 	private void postInit() {
 	}
@@ -266,6 +269,11 @@ public class DSLauncherHead extends JFrame {
 		
 	}
 	
+	/**
+	 * Gets the latest version number from server's update.txt
+	 * 
+	 * TODO: Sequential updates... we don't want the latest, we want each update in the order of which they came in.
+	 */
 	private void updateVersionFromServer() {
 		appendLine("Obtaining version from server.");
 		Scanner s;
@@ -281,6 +289,7 @@ public class DSLauncherHead extends JFrame {
 			{  
 				try {
 			    	line = s.nextLine().replace(" ", "");
+			    	System.out.println("Here Yar Be: " + line);
 			    } catch(NoSuchElementException e) {
 			    	//We're done here
 					appendLine("Recieved server version reply: " + versionFromServer);
@@ -316,7 +325,7 @@ public class DSLauncherHead extends JFrame {
 	}
 	
 	private int compareVersion(String vf, String vs) {
-		//Split by periods... needed escape sequence \\.
+		//Split by periods, needed escape sequence \\.
 		String[] vfParts = vf.split("\\.");
 		String[] vsParts = vs.split("\\.");
 		
@@ -344,9 +353,33 @@ public class DSLauncherHead extends JFrame {
 		}
 	}
 	
-	private void updateDSMinecraftInstallation() {
+	private void updateDSMinecraftInstallation(int incrementalVersionNumber) {
 		appendLine("Updating from version: " + versionFromFile);
 		//TODO: update the DSMinecraft Installation... I have no idea what this may entail
+		ISevenZipInArchive inArchive;
+		RandomAccessFile r;
+        Scanner s;
+        URL d;
+        
+        appendLine("Downloading Update: " + versions.get(incrementalVersionNumber));
+        appendLine(downloadUrls.get(incrementalVersionNumber));
+        
+        try{
+        	r = new RandomAccessFile(downloadUrls.get(incrementalVersionNumber), "r");
+        	
+	        d = new URL(downloadUrls.get(incrementalVersionNumber));
+	        
+	        s = new Scanner(d.openStream());
+	        
+	        inArchive = SevenZip.openInArchive(null, // autodetect archive type
+	                new RandomAccessFileInStream(r));
+        
+        	//Getting simple interface of the archive inArchive
+        	ISimpleInArchive simpleInArchive = inArchive.getSimpleInterface();
+        
+        } catch(Exception e) {
+        	e.printStackTrace();
+        }
 		
 		
 		
