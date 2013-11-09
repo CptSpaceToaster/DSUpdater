@@ -1,15 +1,20 @@
 package DSLauncher.src;
 
 import java.awt.BorderLayout;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -48,9 +53,9 @@ public class DSLauncherHead extends JFrame {
 	
 	private String statusString;
 	private String versionFromFile;
-	private String versionFromServer;
+	private String greatestVersionFromServer;
 	
-	private int updateIndex;
+	private int numOfUpdates;
 	
 	private ArrayList<String> versions;
 	private ArrayList<String> downloadUrls; 
@@ -68,7 +73,7 @@ public class DSLauncherHead extends JFrame {
 	/***********************/
 	
 	/** Location of update.txt **/
-	private final String UPDATE_URL_STRING = "https://dl.dropboxusercontent.com/s/n4jfufpyh5emqg1/fakeUpdate.txt"; //"https://dl.dropboxusercontent.com/u/5921811/update.txt"
+	private final String UPDATE_URL_STRING = "https://dl.dropboxusercontent.com/u/5921811/update.txt"; //"https://dl.dropboxusercontent.com/s/n4jfufpyh5emqg1/fakeUpdate.txt"
 	
 	/** File Date Format **/
 	private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss");
@@ -82,11 +87,20 @@ public class DSLauncherHead extends JFrame {
 	/** DS Launcher Properties Filename **/
 	private final String DEFAULT_FILE_NAME = "DSLauncher.properties";
 	
+	/** Default Version Number (incase one doesn't exist) **/
+	private static final String DEFAULT_VERSION = "";
+	
 	/** Pixel Width of Window **/
 	private final int DEFAULT_WIDTH = 400;
 	
 	/** Pixel Height of Window **/
 	private final int DEFAULT_HEIGHT = 300;
+	
+	/** Whether or not the user can Resize the console window **/
+	private final boolean isConsoleResizable = false;
+	
+	/** File Download buffer **/
+	private final int BUFFER_SIZE = 4096; //4kb buffer
 	
 	/*********************/
 	/* END CONFIGURATION */
@@ -97,7 +111,7 @@ public class DSLauncherHead extends JFrame {
 	 * Main method to be called externally.  Creates an instance of DSLauncherHead, which starts off this carnival ride!
 	 * 
 	 * @param args Command Line Arguments... currently unused
-	 * TODO: Consider making a CLA to start the jar with the terminal in the background, or always log.
+	 * TODO: Consider making a CLA to start the jar with the terminal in the background, or always show its log.
 	 */
 	public static void main(String[] args) {
 		new DSLauncherHead();
@@ -111,14 +125,14 @@ public class DSLauncherHead extends JFrame {
 		init();
 		postInit();
 		
-		int versionStatus = compareVersion(versionFromFile, versionFromServer);
+		int versionStatus = compareVersion(versionFromFile, greatestVersionFromServer);
 		if (versionStatus == GREATER) {
 			//The file has a "more up to date version number than the Server"
 			//No idea what to do here...
 			setVisible(true);
 			
 			appendLine("Unexpected Version Mismatch");
-			appendLine("Server Version: " + versionFromServer);
+			appendLine("Server Version: " + greatestVersionFromServer);
 			appendLine("Local Version: " + versionFromFile);
 			
 			saveConsoleLog(UPDATE_FILENAME + dateFormat.format(new Date()) + ".txt");
@@ -129,13 +143,12 @@ public class DSLauncherHead extends JFrame {
 			appendLine("You're version is out of date!");
 			//Turn the GUI on!
 			setVisible(true);
-			
-			updateDSMinecraftInstallation(0);
+			updateDSMinecraftInstallation();
 			//saveToTextFile(DEFAULT_FILE_NAME);
 			
 			saveConsoleLog(UPDATE_FILENAME + dateFormat.format(new Date()) + ".txt");
 			
-			JOptionPane.showMessageDialog(null, "Your version was updated to " + versionFromServer, "Updated", JOptionPane.PLAIN_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Your version was updated to " + greatestVersionFromServer, "Updated", JOptionPane.PLAIN_MESSAGE);
 			
 		}
 		else if (versionStatus == EQUAL) {	
@@ -180,9 +193,8 @@ public class DSLauncherHead extends JFrame {
 		setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 		//Start window in the center of the main screen
 		setLocationRelativeTo(null);
-			
-		//Do we want users to be able to resize the window/popup? 
-		//setResizable(false);
+		
+		setResizable(isConsoleResizable);
 		
 		try {
 			updateUrl = new URL(UPDATE_URL_STRING);
@@ -197,8 +209,8 @@ public class DSLauncherHead extends JFrame {
 	 * Initialization routine, used to set instance variables
 	 */
 	private void init() {
-		updateVersionFromServer();
 		loadFromTextFile(DEFAULT_FILE_NAME);
+		getVersionsFromServer();
 	}
 	
 	/**
@@ -213,50 +225,59 @@ public class DSLauncherHead extends JFrame {
 	}
 	
 	private void loadFromTextFile(String filename){
+		Scanner s = null;
 		try {
-			Scanner s = new Scanner(new File(filename));
+			s = new Scanner(new File(filename));
 			
 			versionFromFile = s.nextLine().trim();
 			//TODO: Read more data than just the version number?
 
 			
-			s.close();
-		} catch (FileNotFoundException ex) {
+			
+		} catch (FileNotFoundException e) {
 			//No file exists, program will make a new File, and set default values
 			//TODO: Make necessary instance variables, and set them properly here
 				//(Default private final variables would be expected)
-			versionFromFile = versionFromServer;
+			versionFromFile = DEFAULT_VERSION;
 			
 			saveToTextFile(filename);
 			appendLine(DEFAULT_FILE_NAME + " missing, a new one was created.");
-		} catch (Exception ex) {
-			ex.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
 			JOptionPane.showMessageDialog(null, "File read error", "Error", JOptionPane.ERROR_MESSAGE);
 			closeGUI();
+		}
+		
+		if (s != null) {
+			s.close();
 		}
 	}
 	
 	private void saveToTextFile(String filename){
+		PrintWriter out = null;
 		try{
-			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
+			out = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
 			
-			out.println(versionFromServer);
+			out.println(greatestVersionFromServer);
 			//TODO: Store more than just the version file?
 			
 			
 			
-			out.close();
+			
 		} catch (IOException ex) {
 			ex.printStackTrace();
 			JOptionPane.showMessageDialog(null, "File write error", "Error", JOptionPane.ERROR_MESSAGE);
+		}
+		
+		if (out != null) {
+			out.close();
 		}
 	}
 	
 	private void saveConsoleLog(String filename) {
 		try {
 			PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(filename)));
-			//TODO: Not use Windows Specific NewLine Character \r\n
-			String output = statusLabel.getText().replace("<br>", "\r\n");
+			String output = statusLabel.getText().replace("<br>", System.lineSeparator());
 			output = output.replace("<html>", "");
 			output = output.replace("</html>", "");
 			
@@ -274,56 +295,67 @@ public class DSLauncherHead extends JFrame {
 	 * 
 	 * TODO: Sequential updates... we don't want the latest, we want each update in the order of which they came in.
 	 */
-	private void updateVersionFromServer() {
+	private void getVersionsFromServer() {
 		appendLine("Obtaining version from server.");
-		Scanner s;
+		numOfUpdates = 0;
+		
+		BufferedReader in = null;
 		try {
-			s = new Scanner(updateUrl.openStream());
-			updateIndex = 0;
-			versionFromServer = "";
+			in = new BufferedReader(new InputStreamReader(updateUrl.openStream()));
+			appendLine("Recieved server version reply.");
 			
-			String line;
-			
-			
-			while (true)
-			{  
-				try {
-			    	line = s.nextLine().replace(" ", "");
-			    	System.out.println("Here Yar Be: " + line);
-			    } catch(NoSuchElementException e) {
-			    	//We're done here
-					appendLine("Recieved server version reply: " + versionFromServer);
-					s.close();
-					break;
-			    }
-				//Splits the string into parts based on semi colons, and creates empty strings if there exists ;;
-				String[] updateParts = line.split(";", -1);
-			    try {
-			    	if (updateParts.length>=3) {
-				    	versions.add(updateParts[0]);
+		    try {
+		    	String line;
+		    	while ((line = in.readLine()) != null) {
+			    	//Splits the string into parts based on semi colons, and creates empty strings if there exists ;;
+			    	String[] updateParts = line.replace(" ", "").split(";", -1);
+			    	
+		    		if ((updateParts.length == 3) && compareVersion(updateParts[0], versionFromFile) == GREATER) {
+		    			appendLine("Found Version: " + updateParts[0]);
+		    			
+		    			versions.add(updateParts[0]);
 				    	downloadUrls.add(updateParts[1]);
 				    	fileNames.add(updateParts[2]);
-			    	}
-			    } catch(IndexOutOfBoundsException e) { 
-					appendLine("Update.txt doesn't look right.");
-					appendLine("expected: Version; DownloadURL; FileName");
-			    }
-			    
-			    //If version from update.txt is greater than the currently largest version we have, then overwrite it!
-			    if(compareVersion(versions.get(updateIndex), versionFromServer) == GREATER) {
-			    	versionFromServer = versions.get(updateIndex);
-			    }
-			    
-			    
-			    updateIndex ++;
-			}
-			
-		} catch(IOException e) {
+				    	
+				    	numOfUpdates++;
+				    	System.out.println(numOfUpdates);
+		    		}
+		    	}
+		    	//Assume the latest Version is the Last Version
+		    	if (numOfUpdates != 0)
+		    		greatestVersionFromServer = versions.get(numOfUpdates-1);
+		    } catch(IndexOutOfBoundsException e) {
+		    	e.printStackTrace();
+				appendLine("Update.txt doesn't look right.");
+				appendLine("Expected: Version; DownloadURL; FileName\n");
+				appendLine("Ignoring all updates and ignoring check.");
+		    }
+		} catch(Exception e) {
 			appendLine("Couldn't recieve response from server, ignoring updates");
-			versionFromServer = versionFromFile;
+			greatestVersionFromServer = versionFromFile;
+		} finally {
+			if (in != null) {
+				try {
+					in.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+					appendLine("We can't seem to close the download properly... ");
+				}
+			}
 		}
 	}
 	
+	/**
+	 * Compares two version Strings lexicographically.  Longer Versions (Parts separated by periods) are considered "more up to date"
+	 * 1.1.0 is greater than 1.0.0
+	 * 1.1.0 is greater than 1.0.200A
+	 * a.0.0 is greater than 1.1.1
+	 * 1.0.0 is greater than 9.9
+	 * 
+	 * @param vf First Version String
+	 * @param vs Second Version String
+	 * @return Whether the first version is greater, than the second version, equal to, or out of date.
+	 */
 	private int compareVersion(String vf, String vs) {
 		//Split by periods, needed escape sequence \\.
 		String[] vfParts = vf.split("\\.");
@@ -353,38 +385,40 @@ public class DSLauncherHead extends JFrame {
 		}
 	}
 	
-	private void updateDSMinecraftInstallation(int incrementalVersionNumber) {
-		appendLine("Updating from version: " + versionFromFile);
-		//TODO: update the DSMinecraft Installation... I have no idea what this may entail
-		ISevenZipInArchive inArchive;
-		RandomAccessFile r;
-        Scanner s;
-        URL d;
-        
-        appendLine("Downloading Update: " + versions.get(incrementalVersionNumber));
-        appendLine(downloadUrls.get(incrementalVersionNumber));
-        
-        try{
-        	r = new RandomAccessFile(downloadUrls.get(incrementalVersionNumber), "r");
-        	
-	        d = new URL(downloadUrls.get(incrementalVersionNumber));
+	private void updateDSMinecraftInstallation() {
+		for (int i=0; i<numOfUpdates; i++) {
+			appendLine("Updating from version: " + versionFromFile);
+			//TODO: update the DSMinecraft Installation... I have no idea what this may entail
+	//		ISevenZipInArchive inArchive = null;
+	//		RandomAccessFile r = null;
+	//        Scanner s = null;
+	//        URL d = null;
 	        
-	        s = new Scanner(d.openStream());
+	        appendLine("Downloading Update: " + versions.get(i));
+	        appendLine(downloadUrls.get(i));
 	        
-	        inArchive = SevenZip.openInArchive(null, // autodetect archive type
-	                new RandomAccessFileInStream(r));
-        
-        	//Getting simple interface of the archive inArchive
-        	ISimpleInArchive simpleInArchive = inArchive.getSimpleInterface();
-        
-        } catch(Exception e) {
-        	e.printStackTrace();
-        }
-		
-		
-		
-		versionFromFile = versionFromServer;
-		appendLine("Updated to version: " + versionFromFile);
+	        try{
+		        downloadFromURL(new URL(downloadUrls.get(i)), fileNames.get(i));
+		        
+		        
+	//	        inArchive = SevenZip.openInArchive(null, // autodetect archive type
+	//	                new RandomAccessFileInStream(r));
+	//        
+	//        	//Getting simple interface of the archive inArchive
+	//        	ISimpleInArchive simpleInArchive = inArchive.getSimpleInterface();
+	        
+	        } catch(Exception e) {
+	        	System.out.println("IT ALL BLOWED UP!");
+	        	e.printStackTrace();
+	        } finally {
+	        	//Close Files
+	        }
+			
+			
+			
+			versionFromFile = greatestVersionFromServer;
+			appendLine("Updated to version: " + versionFromFile);
+		}
 	}
 	
 	/**
@@ -393,7 +427,43 @@ public class DSLauncherHead extends JFrame {
 	 */
 	private void appendLine(String str) {
 		System.out.println(str);
+		str.replace("\n", "<br>");
 		statusString += str + "<br>";
 		statusLabel.setText("<html>" + statusString + "</html>");
+	}
+	
+	void downloadFromURL(URL url, String localFilename) throws IOException {
+	    InputStream i = null;
+	    FileOutputStream f = null;
+	
+	    try {
+	        URLConnection urlConn = url.openConnection();//connect
+	
+	        i = urlConn.getInputStream();               //get connection inputstream
+	        f = new FileOutputStream(localFilename);   //open outputstream to local file
+	
+	        int downloaded = 0;
+	        int fileSize = i.available();
+	        
+	        byte[] buffer = new byte[BUFFER_SIZE];
+	        int len;
+	
+	        //while we have availble data, continue downloading and storing to local file
+	        while ((len = i.read(buffer)) > 0) {  
+	            f.write(buffer, 0, len);
+	            downloaded += len;
+	            System.out.println(downloaded + "/" + fileSize + " kB");
+	        }
+	    } finally {
+	        try {
+	            if (i != null) {
+	                i.close();
+	            }
+	        } finally {
+	            if (f != null) {
+	                f.close();
+	            }
+	        }
+	    }
 	}
 }
