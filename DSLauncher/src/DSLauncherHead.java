@@ -73,7 +73,7 @@ public class DSLauncherHead extends JFrame {
 	/***********************/
 	
 	/** Location of update.txt **/
-	private final String UPDATE_URL_STRING = "https://dl.dropboxusercontent.com/u/5921811/update.txt"; //"https://dl.dropboxusercontent.com/s/n4jfufpyh5emqg1/fakeUpdate.txt"
+	private final String UPDATE_URL_STRING = "https://dl.dropboxusercontent.com/s/n4jfufpyh5emqg1/fakeUpdate.txt"; //"https://dl.dropboxusercontent.com/u/5921811/update.txt"
 	
 	/** File Date Format **/
 	private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH.mm.ss");
@@ -291,9 +291,14 @@ public class DSLauncherHead extends JFrame {
 	}
 	
 	/**
-	 * Gets the latest version number from server's update.txt
+	 * Checks the update.txt file for Versions, and if it finds versions that are out of date, then it adds them to the
+	 * lists to update!
 	 * 
-	 * TODO: Sequential updates... we don't want the latest, we want each update in the order of which they came in.
+	 *  Modifies:
+	 *  greatestVersionFromServer - When it's through, this will represent the latest version released by the server!
+	 *  ArrayList<String> versions
+	 *  ArrayList<String> downloadUrls
+	 *  ArrayList<String> fileNames
 	 */
 	private void getVersionsFromServer() {
 		appendLine("Obtaining version from server.");
