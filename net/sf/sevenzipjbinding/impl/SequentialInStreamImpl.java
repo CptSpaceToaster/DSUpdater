@@ -16,7 +16,8 @@ public class SequentialInStreamImpl implements ISequentialInStream {
 	private InputStream inputStream;
 
 	/**
-	 * Create instance of {@link SequentialInStreamImpl} based on {@link InputStream}
+	 * Create instance of {@link SequentialInStreamImpl} based on
+	 * {@link InputStream}
 	 * 
 	 * @param inputStream
 	 *            input stream to use

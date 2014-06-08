@@ -44,7 +44,8 @@ public class InArchiveImpl implements ISevenZipInArchive {
 		/**
 		 * {@inheritDoc}
 		 */
-		public void setOperationResult(ExtractOperationResult extractOperationResult) {
+		public void setOperationResult(
+				ExtractOperationResult extractOperationResult) {
 			this.extractOperationResult = extractOperationResult;
 		}
 
@@ -57,8 +58,10 @@ public class InArchiveImpl implements ISevenZipInArchive {
 		/**
 		 * {@inheritDoc}
 		 */
-		public ISequentialOutStream getStream(int index, ExtractAskMode extractAskMode) {
-			return extractAskMode.equals(ExtractAskMode.EXTRACT) ? sequentialOutStreamParam : null;
+		public ISequentialOutStream getStream(int index,
+				ExtractAskMode extractAskMode) {
+			return extractAskMode.equals(ExtractAskMode.EXTRACT) ? sequentialOutStreamParam
+					: null;
 		}
 
 		ExtractOperationResult getExtractOperationResult() {
@@ -66,11 +69,13 @@ public class InArchiveImpl implements ISevenZipInArchive {
 		}
 	}
 
-	private static final class ExtractSlowCryptoCallback extends ExtractSlowCallback implements ICryptoGetTextPassword {
+	private static final class ExtractSlowCryptoCallback extends
+			ExtractSlowCallback implements ICryptoGetTextPassword {
 
 		private String password;
 
-		public ExtractSlowCryptoCallback(ISequentialOutStream sequentialOutStream, String password) {
+		public ExtractSlowCryptoCallback(
+				ISequentialOutStream sequentialOutStream, String password) {
 			super(sequentialOutStream);
 			this.password = password;
 		}
@@ -80,10 +85,8 @@ public class InArchiveImpl implements ISevenZipInArchive {
 		}
 	}
 
-	@SuppressWarnings("unused")
 	private long sevenZipArchiveInstance;
 
-	@SuppressWarnings("unused")
 	private long sevenZipArchiveInStreamInstance;
 
 	private int numberOfItems = -1;
@@ -93,8 +96,8 @@ public class InArchiveImpl implements ISevenZipInArchive {
 	/**
 	 * {@inheritDoc}
 	 */
-	public void extract(int[] indices, boolean testMode, IArchiveExtractCallback extractCallback)
-			throws SevenZipException {
+	public void extract(int[] indices, boolean testMode,
+			IArchiveExtractCallback extractCallback) throws SevenZipException {
 
 		nativeExtract(indices, testMode, extractCallback);
 	}
@@ -102,7 +105,8 @@ public class InArchiveImpl implements ISevenZipInArchive {
 	/**
 	 * {@inheritDoc}
 	 */
-	public ExtractOperationResult extractSlow(int index, ISequentialOutStream outStream) throws SevenZipException {
+	public ExtractOperationResult extractSlow(int index,
+			ISequentialOutStream outStream) throws SevenZipException {
 		ExtractSlowCallback extractCallback = new ExtractSlowCallback(outStream);
 		nativeExtract(new int[] { index }, false, extractCallback);
 		return extractCallback.getExtractOperationResult();
@@ -112,17 +116,20 @@ public class InArchiveImpl implements ISevenZipInArchive {
 	 * {@inheritDoc}
 	 */
 
-	public ExtractOperationResult extractSlow(int index, ISequentialOutStream outStream, String password)
+	public ExtractOperationResult extractSlow(int index,
+			ISequentialOutStream outStream, String password)
 			throws SevenZipException {
-		ExtractSlowCryptoCallback extractCallback = new ExtractSlowCryptoCallback(outStream, password);
+		ExtractSlowCryptoCallback extractCallback = new ExtractSlowCryptoCallback(
+				outStream, password);
 		nativeExtract(new int[] { index }, false, extractCallback);
 		return extractCallback.getExtractOperationResult();
 	}
 
-	private native void nativeExtract(int[] indices, boolean testMode, IArchiveExtractCallback extractCallback)
-			throws SevenZipException;
+	private native void nativeExtract(int[] indices, boolean testMode,
+			IArchiveExtractCallback extractCallback) throws SevenZipException;
 
-	private native Object nativeGetArchiveProperty(int propID) throws SevenZipException;
+	private native Object nativeGetArchiveProperty(int propID)
+			throws SevenZipException;
 
 	/**
 	 * {@inheritDoc}
@@ -132,12 +139,14 @@ public class InArchiveImpl implements ISevenZipInArchive {
 		return nativeGetArchiveProperty(propID.getPropIDIndex());
 	}
 
-	private native String nativeGetStringArchiveProperty(int propID) throws SevenZipException;
+	private native String nativeGetStringArchiveProperty(int propID)
+			throws SevenZipException;
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getStringArchiveProperty(PropID propID) throws SevenZipException {
+	public String getStringArchiveProperty(PropID propID)
+			throws SevenZipException {
 		return nativeGetStringArchiveProperty(propID.getPropIDIndex());
 	}
 
@@ -146,11 +155,13 @@ public class InArchiveImpl implements ISevenZipInArchive {
 	/**
 	 * {@inheritDoc}
 	 */
-	public PropertyInfo getArchivePropertyInfo(PropID propID) throws SevenZipException {
+	public PropertyInfo getArchivePropertyInfo(PropID propID)
+			throws SevenZipException {
 		return nativeGetArchivePropertyInfo(propID.getPropIDIndex());
 	}
 
-	private native int nativeGetNumberOfArchiveProperties() throws SevenZipException;
+	private native int nativeGetNumberOfArchiveProperties()
+			throws SevenZipException;
 
 	/**
 	 * {@inheritDoc}
@@ -168,7 +179,8 @@ public class InArchiveImpl implements ISevenZipInArchive {
 		return nativeGetNumberOfProperties();
 	}
 
-	private native PropertyInfo nativeGetPropertyInfo(int index) throws SevenZipException;
+	private native PropertyInfo nativeGetPropertyInfo(int index)
+			throws SevenZipException;
 
 	/**
 	 * {@inheritDoc}
@@ -203,10 +215,12 @@ public class InArchiveImpl implements ISevenZipInArchive {
 	/**
 	 * {@inheritDoc}
 	 */
-	public Object getProperty(int index, PropID propID) throws SevenZipException {
+	@SuppressWarnings("incomplete-switch")
+	public Object getProperty(int index, PropID propID)
+			throws SevenZipException {
 		if (index < 0 || index >= getNumberOfItems()) {
-			throw new SevenZipException("Index out of range. Index: " + index + ", NumberOfItems: "
-					+ getNumberOfItems());
+			throw new SevenZipException("Index out of range. Index: " + index
+					+ ", NumberOfItems: " + getNumberOfItems());
 		}
 		// Correct some returned values
 		Object returnValue = nativeGetProperty(index, propID.getPropIDIndex());
@@ -214,13 +228,15 @@ public class InArchiveImpl implements ISevenZipInArchive {
 		case SIZE:
 		case PACKED_SIZE:
 			// ARJ archive returns sized as Integer (32 bit).
-			// It isn't particular good idea, since every other archive returns Long (64 bit).
+			// It isn't particular good idea, since every other archive returns
+			// Long (64 bit).
 			// So it will be corrected here.
 			if (returnValue instanceof Integer) {
 				return Long.valueOf(((Integer) returnValue).longValue());
 			}
 
-			if (returnValue == null && archiveFormat != null && archiveFormat == ArchiveFormat.NSIS) {
+			if (returnValue == null && archiveFormat != null
+					&& archiveFormat == ArchiveFormat.NSIS) {
 				return Long.valueOf(0);
 			}
 			break;
@@ -245,10 +261,11 @@ public class InArchiveImpl implements ISevenZipInArchive {
 	/**
 	 * {@inheritDoc}
 	 */
-	public String getStringProperty(int index, PropID propID) throws SevenZipException {
+	public String getStringProperty(int index, PropID propID)
+			throws SevenZipException {
 		if (index < 0 || index >= getNumberOfItems()) {
-			throw new SevenZipException("Index out of range. Index: " + index + ", NumberOfItems: "
-					+ getNumberOfItems());
+			throw new SevenZipException("Index out of range. Index: " + index
+					+ ", NumberOfItems: " + getNumberOfItems());
 		}
 		return nativeGetStringProperty(index, propID.getPropIDIndex());
 	}
@@ -268,15 +285,16 @@ public class InArchiveImpl implements ISevenZipInArchive {
 	}
 
 	/**
-	 * Set archive format of the opened archive. This method should be called only through JNI.
+	 * Set archive format of the opened archive. This method should be called
+	 * only through JNI.
 	 * 
 	 * @param archiveFormat
 	 *            format of the opened archive
 	 */
-	@SuppressWarnings("unused")
 	private void setArchiveFormat(String archiveFormatString) {
 		for (ArchiveFormat archiveFormat : ArchiveFormat.values()) {
-			if (archiveFormat.getMethodName().equalsIgnoreCase(archiveFormatString)) {
+			if (archiveFormat.getMethodName().equalsIgnoreCase(
+					archiveFormatString)) {
 				this.archiveFormat = archiveFormat;
 				return;
 			}

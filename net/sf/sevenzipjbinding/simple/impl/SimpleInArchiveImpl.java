@@ -6,7 +6,8 @@ import net.sf.sevenzipjbinding.simple.ISimpleInArchive;
 import net.sf.sevenzipjbinding.simple.ISimpleInArchiveItem;
 
 /**
- * Standard implementation of {@link ISimpleInArchive}, simplified 7-Zip-JBinding interface.
+ * Standard implementation of {@link ISimpleInArchive}, simplified
+ * 7-Zip-JBinding interface.
  * 
  * @author Boris Brodski
  * @version 4.65-1
@@ -16,7 +17,8 @@ public class SimpleInArchiveImpl implements ISimpleInArchive {
 	private boolean wasClosed = false;
 
 	/**
-	 * Constructing an instance of {@link SimpleInArchiveImpl} from a instance of {@link ISevenZipInArchive}.
+	 * Constructing an instance of {@link SimpleInArchiveImpl} from a instance
+	 * of {@link ISevenZipInArchive}.
 	 * 
 	 * @param sevenZipInArchive
 	 *            a base instance of {@link ISevenZipInArchive}
@@ -61,7 +63,8 @@ public class SimpleInArchiveImpl implements ISimpleInArchive {
 	 * @throws SevenZipException
 	 *             archive can't be accessed any more
 	 */
-	public ISevenZipInArchive testAndGetSafeSevenZipInArchive() throws SevenZipException {
+	public ISevenZipInArchive testAndGetSafeSevenZipInArchive()
+			throws SevenZipException {
 		if (wasClosed) {
 			throw new SevenZipException("Archive was closed");
 		}
@@ -71,9 +74,11 @@ public class SimpleInArchiveImpl implements ISimpleInArchive {
 	/**
 	 * ${@inheritDoc}
 	 */
-	public ISimpleInArchiveItem getArchiveItem(int index) throws SevenZipException {
+	public ISimpleInArchiveItem getArchiveItem(int index)
+			throws SevenZipException {
 		if (index < 0 || index >= sevenZipInArchive.getNumberOfItems()) {
-			throw new SevenZipException("Index " + index + " is out of range. Number of items in archive: "
+			throw new SevenZipException("Index " + index
+					+ " is out of range. Number of items in archive: "
 					+ sevenZipInArchive.getNumberOfItems());
 		}
 		return new SimpleInArchiveItemImpl(this, index);

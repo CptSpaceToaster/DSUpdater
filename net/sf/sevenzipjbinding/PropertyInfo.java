@@ -28,6 +28,7 @@ public class PropertyInfo {
 	 */
 	@Override
 	public String toString() {
-		return "name=" + name + "; propID=" + propID + "; varType=" + varType.getCanonicalName();
+		return "name=" + name + "; propID=" + propID + "; varType="
+				+ varType.getCanonicalName();
 	}
 }

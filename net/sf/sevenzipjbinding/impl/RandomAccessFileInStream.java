@@ -36,7 +36,8 @@ public class RandomAccessFileInStream implements IInStream {
 				break;
 
 			case SEEK_CUR:
-				randomAccessFile.seek(randomAccessFile.getFilePointer() + offset);
+				randomAccessFile.seek(randomAccessFile.getFilePointer()
+						+ offset);
 				break;
 
 			case SEEK_END:
@@ -44,7 +45,8 @@ public class RandomAccessFileInStream implements IInStream {
 				break;
 
 			default:
-				throw new RuntimeException("Seek: unknown origin: " + seekOrigin);
+				throw new RuntimeException("Seek: unknown origin: "
+						+ seekOrigin);
 			}
 
 			return randomAccessFile.getFilePointer();
@@ -71,7 +73,8 @@ public class RandomAccessFileInStream implements IInStream {
 	}
 
 	/**
-	 * Closes random access file. After this call no more methods should be called.
+	 * Closes random access file. After this call no more methods should be
+	 * called.
 	 * 
 	 * @throws IOException
 	 */

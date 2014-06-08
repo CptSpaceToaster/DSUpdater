@@ -285,14 +285,14 @@ public enum ArchiveFormat {
 	 */
 	UDF("Udf"),
 
-	    /**
-     * Udf
-     */
-    WIM("Wim"),
+	/**
+	 * Udf
+	 */
+	WIM("Wim"),
 
-    /**
-     * Xar
-     */
+	/**
+	 * Xar
+	 */
 	XAR("Xar");
 
 	private String methodName;
